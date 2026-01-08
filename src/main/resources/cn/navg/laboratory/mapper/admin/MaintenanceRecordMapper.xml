@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.navg.laboratory.mapper.admin.MaintenanceRecordMapper">
+    <!--更新维修状态/记录-->
+    <update id="updateMaintenanceStatus">
+        update maintenancerecord
+        set
+        MaintenanceStatus = #{maintenanceStatus},
+        <if test="maintenanceStartTime != null and maintenanceStartTime != ''">
+            MaintenanceStartTime = #{maintenanceStartTime},
+        </if>
+        <if test="maintenanceEndTime != null and maintenanceEndTime != ''">
+            MaintenanceEndTime = #{maintenanceEndTime},
+        </if>
+        MaintenanceContent = #{maintenanceContent},
+        MaintenancePerson = #{maintenancePerson},
+        Remark = #{remark},
+        UpdateTime = #{updateTime}
+        where MaintenanceId = #{maintenanceId}
+    </update>
+    <!--审批维修记录-->
+    <update id="approveMaintenanceRecord" parameterType="cn.navg.laboratory.pojo.MaintenanceRecord">
+        update maintenancerecord
+        set
+        MaintenanceStatus = #{MaintenanceStatus},
+        UpdateTime = #{UpdateTime},
+        Remark = #{Remark}
+        where MaintenanceId = #{MaintenanceId}
+    </update>
+    <!--查询维修记录 查询所有-->
+    <select id="getRepairRecordList" resultType="cn.navg.laboratory.pojo.MaintenanceRecord">
+        select main.*, equ.EquipmentName from maintenancerecord main
+        left join equipment equ on main.EquipmentId = equ.EquipmentId limit #{currentPage}, #{pageSize}
+    </select>
+
+    <!--查询维修记录 总数-->
+    <select id="getTotalRepairRecord" resultType="int">
+        select count(*) from maintenancerecord
+    </select>
+    <select id="getMaintenanceRecordByCondition" resultType="cn.navg.laboratory.pojo.MaintenanceRecord">
+        SELECT
+        m.MaintenanceId,
+        m.EquipmentId,
+        e.EquipmentName,
+        m.FaultDescription,
+        m.ReportDate,
+        m.ReporterId,
+        m.ReporterName,
+        m.MaintenanceCompany,
+        m.MaintenanceCost,
+        m.MaintenanceStatus,
+        m.MaintenanceStartTime,
+        m.MaintenanceEndTime,
+        m.MaintenanceContent,
+        m.MaintenancePerson,
+        m.CreateTime,
+        m.UpdateTime
+        FROM MaintenanceRecord m
+        LEFT JOIN Equipment e ON m.EquipmentId = e.EquipmentId
+        <where>
+            <!-- 设备名称条件 -->
+            <if test="equipmentName != null and equipmentName != ''">
+                AND e.EquipmentName LIKE CONCAT('%', #{equipmentName}, '%')
+            </if>
+
+            <!-- 维修状态条件 -->
+            <if test="maintenanceStatus != null">
+                AND m.MaintenanceStatus = #{maintenanceStatus}
+            </if>
+
+            <!-- 报修人姓名条件 -->
+            <if test="reporterName != null and reporterName != ''">
+                AND m.ReporterName LIKE CONCAT('%', #{reporterName}, '%')
+            </if>
+        </where>
+        ORDER BY m.ReportDate DESC
+        LIMIT #{currentPage}, #{pageSize}
+    </select>
+    <select id="getTotalMaintenanceRecordByCondition" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM MaintenanceRecord m
+        LEFT JOIN Equipment e ON m.EquipmentId = e.EquipmentId
+        <where>
+            <if test="equipmentName != null and equipmentName != ''">
+                AND e.EquipmentName LIKE CONCAT('%', #{equipmentName}, '%')
+            </if>
+
+            <if test="maintenanceStatus != null">
+                AND m.MaintenanceStatus = #{maintenanceStatus}
+            </if>
+
+            <if test="reporterName != null and reporterName != ''">
+                AND m.ReporterName LIKE CONCAT('%', #{reporterName}, '%')
+            </if>
+        </where>
+    </select>
+</mapper>

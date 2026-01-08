@@ -1,0 +1,496 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.navg.laboratory.mapper.teacher.DeviceManagementMapper">
+    <insert id="borrowDevice" parameterType="cn.navg.laboratory.pojo.BorrowRequest">
+        INSERT INTO borrowrequest (
+        EquipmentId,
+        ApplicantId,
+        ApplicantName,
+        BorrowStartTime,
+        BorrowEndTime,
+        BorrowReason,
+        ApprovalStatus,
+        ReturnStatus,
+        UpdateTime
+        )
+        VALUES (
+        #{equipmentId},
+        #{applicantId},
+        #{applicantName},
+        #{borrowStartTime},
+        #{borrowEndTime},
+        #{borrowReason},
+        #{approvalStatus},
+        #{returnStatus},
+        #{updateTime}
+        )
+    </insert>
+    <insert id="reserveLaboratory" parameterType="laboratoryUsage">
+        INSERT INTO LaboratoryUsage (
+        LaboratoryId,
+        UserId,
+        UserName,
+        UsageStartTime,
+        UsageEndTime,
+        UsagePurpose,
+        UsageStatus,
+        ReservationStatus,
+        ReservationTime,
+        CreateTime,
+        UpdateTime,
+        Remark
+        )
+        VALUES (
+        #{laboratoryId},
+        #{userId},
+        #{userName},
+        #{usageStartTime},
+        #{usageEndTime},
+        #{usagePurpose},
+        #{usageStatus},
+        #{reservationStatus},
+        #{reservationTime},
+        #{createTime},
+        #{updateTime},
+        #{remark}
+        )
+    </insert>
+    <insert id="maintainDevice" parameterType="MaintenanceRecord">
+        INSERT INTO `maintenancerecord` (
+        `EquipmentId`,
+        `FaultDescription`,
+        `ReporterId`,
+        `ReporterName`,
+        `MaintenanceStatus`,
+        `CreateTime`,
+        `UpdateTime`
+        ) VALUES (
+        #{EquipmentId},
+        #{FaultDescription},
+        #{ReporterId},
+        #{ReporterName},
+        '-1',
+        #{CreateTime},
+        #{UpdateTime}
+        );
+    </insert>
+    <insert id="scrapDevice">
+        INSERT INTO scraprequest (
+        EquipmentId,
+        ApplicantId,
+        ApplicantName,
+        ApplyDate,
+        ScrapReason,
+        ScrapStatus,
+        CreateTime,
+        UpdateTime
+        ) VALUES (
+        #{EquipmentId},
+        #{ApplicantId},
+        #{ApplicantName},
+        #{ApplyDate},
+        #{ScrapReason},
+        '-1',
+        #{CreateTime},
+        #{UpdateTime}
+        );
+    </insert>
+    <update id="cancelReserveLaboratory">
+        update laboratoryusage set ReservationStatus = 2,UsageStatus=2,UpdateTime = #{UpdateTime} where
+        UsageId = #{UsageId}
+    </update>
+    <update id="returnDevice">
+        update borrowrequest set ReturnStatus = 2,UpdateTime = #{updateTime},
+        ActualReturnTime=#{actualReturnTime}
+        where RequestId = #{requestId}
+    </update>
+    <update id="updateDeviceCount">
+        update equipment set Quantity = Quantity + 1 where EquipmentId = #{equipmentId}
+    </update>
+    <select id="getUsingDeviceList" resultType="java.lang.Integer">
+        select count(*) as borrowTotal from borrowrequest where ApprovalStatus = 1
+    </select>
+    <select id="getRepairingDeviceCount" resultType="java.lang.Integer">
+        SELECT
+        count(*) AS repairingTotal
+        FROM
+        maintenancerecord
+        WHERE
+        MaintenanceStatus = 1
+        OR MaintenanceStatus = 0
+    </select>
+    <select id="getScrapedDeviceCount" resultType="java.lang.Integer">
+        select count(*) as scrapedTotal from scraprequest
+        where ScrapStatus=1
+    </select>
+    <select id="getAllDeviceCount" resultType="java.lang.Integer">
+        select sum(Quantity) as deviceTotal from equipment
+    </select>
+    <select id="getDeviceListByCondition" resultType="java.util.HashMap">
+        SELECT
+        e.EquipmentId AS equipmentId,
+        e.EquipmentName AS equipmentName,
+        e.EquipmentModel AS equipmentModel,
+        e.TypeId AS typeId,
+        et.TypeName AS typeName,
+        e.Manufacturer,
+        e.PurchaseDate AS purchaseDate,
+        e.PurchasePrice AS purchasePrice,
+        e.LaboratoryId AS laboratoryId,
+        l.LaboratoryName AS laboratoryName,
+        e.EquipmentStatus AS equipmentStatus,
+        e.Quantity,
+        e.SerialNumber AS serialNumber,
+        e.UsageLife AS usageLife,
+        e.Description,
+        e.CreateTime AS createTime,
+        e.UpdateTime AS updateTime
+        FROM equipment e
+        LEFT JOIN equipmenttype et ON e.TypeId = et.TypeId
+        LEFT JOIN laboratory l ON e.LaboratoryId = l.LaboratoryId
+        <where>
+            <!-- 设备名称模糊查询 -->
+            <if test="equipmentName != null and equipmentName != ''">
+                AND e.EquipmentName LIKE CONCAT('%', #{equipmentName}, '%')
+            </if>
+
+            <!-- 设备类型ID精确查询 -->
+            <if test="typeId != null and typeId != ''">
+                AND e.TypeId = #{typeId}
+            </if>
+
+            <!-- 实验室ID精确查询 -->
+            <if test="laboratoryId != null and laboratoryId != ''">
+                AND e.LaboratoryId = #{laboratoryId}
+            </if>
+
+            <!-- 设备状态查询 -->
+            <if test="equipmentStatus != null">
+                AND e.EquipmentStatus = #{equipmentStatus}
+            </if>
+        </where>
+        ORDER BY e.CreateTime DESC
+        LIMIT #{currentPage}, #{pageSize}
+    </select>
+    <!-- 查询符合条件的设备总数（用于分页） -->
+    <select id="getDeviceListByConditionCount" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM equipment e
+        <where>
+            <!-- 设备名称模糊查询 -->
+            <if test="equipmentName != null and equipmentName != ''">
+                AND e.EquipmentName LIKE CONCAT('%', #{equipmentName}, '%')
+            </if>
+
+            <!-- 设备类型ID精确查询 -->
+            <if test="typeId != null and typeId != ''">
+                AND e.TypeId = #{typeId}
+            </if>
+
+            <!-- 实验室ID精确查询 -->
+            <if test="laboratoryId != null and laboratoryId != ''">
+                AND e.LaboratoryId = #{laboratoryId}
+            </if>
+
+            <!-- 可以添加设备状态条件 -->
+            <if test="equipmentStatus != null">
+                AND e.EquipmentStatus = #{equipmentStatus}
+            </if>
+        </where>
+    </select>
+    <select id="getLaboratoryListByCondition"
+            parameterType="map"
+            resultType="cn.navg.laboratory.pojo.Laboratory">
+        SELECT
+        LaboratoryId,
+        LaboratoryName,
+        Building,
+        RoomNumber,
+        Capacity,
+        ManagerName,
+        ManagerPhone,
+        LaboratoryStatus,
+        Description,
+        CreateTime,
+        UpdateTime
+        FROM Laboratory
+        <where>
+            <!-- 实验室名称 模糊匹配 -->
+            <if test="laboratoryName != null and laboratoryName != ''">
+                AND LaboratoryName LIKE CONCAT('%', #{laboratoryName}, '%')
+            </if>
+
+            <!-- 所在楼宇 模糊匹配 -->
+            <if test="building != null and building != ''">
+                AND Building LIKE CONCAT('%', #{building}, '%')
+            </if>
+
+            <!-- 实验室状态 精确匹配：1-正常，0-关闭 -->
+            <if test="laboratoryStatus != null">
+                AND LaboratoryStatus = #{laboratoryStatus}
+            </if>
+        </where>
+        ORDER BY CreateTime DESC
+        LIMIT #{currentPage}, #{pageSize}
+    </select>
+    <!-- 查询符合条件的实验室总数（用于分页） -->
+    <select id="getLaboratoryListByConditionCount" resultType="java.lang.Integer">
+        SELECT COUNT(1)
+        FROM Laboratory
+        <where>
+            <!-- 实验室名称 模糊匹配 -->
+            <if test="laboratoryName != null and laboratoryName != ''">
+                AND LaboratoryName LIKE CONCAT('%', #{laboratoryName}, '%')
+            </if>
+
+            <!-- 所在楼宇 模糊匹配 -->
+            <if test="building != null and building != ''">
+                AND Building LIKE CONCAT('%', #{building}, '%')
+            </if>
+
+            <!-- 实验室状态 精确匹配：1-正常，0-关闭 -->
+            <if test="laboratoryStatus != null">
+                AND LaboratoryStatus = #{laboratoryStatus}
+            </if>
+        </where>
+    </select>
+    <select id="getLaboratoryStatus" resultType="cn.navg.laboratory.pojo.Laboratory">
+        SELECT *
+        FROM Laboratory
+        WHERE LaboratoryId = #{laboratoryId}
+    </select>
+    <!--    -->
+    <select id="getReservedLaboratoryListByTimePeriod" parameterType="map"
+            resultType="cn.navg.laboratory.pojo.LaboratoryUsage">
+        SELECT
+        *
+        FROM LaboratoryUsage
+        WHERE LaboratoryId = #{laboratoryId}
+        <![CDATA[-- 重叠条件：目标区间 [start, end) 与记录区间 [usageStart, usageEnd) 有交集
+    AND UsageStartTime < #{usageEndTime}  -- 记录开始时间 < 目标结束时间
+    AND UsageEndTime > #{usageStartTime}  -- 记录结束时间 > 目标开始时间
+    ]]>
+    </select>
+    <select id="getReservedLaboratoryListByLaboratoryId" resultType="cn.navg.laboratory.pojo.LaboratoryUsage">
+        SELECT *
+        FROM laboratoryusage
+        WHERE LaboratoryId = #{laboratoryId}
+        AND UsageStatus IN (0, 1)
+        AND ReservationStatus IN (1, 4)
+        ORDER BY UsageStartTime ASC;
+    </select>
+    <select id="getTeacherReservedLaboratoryList" resultType="hashmap">
+        SELECT laboratoryusage.*, Laboratory.LaboratoryName
+        FROM laboratoryusage
+        left join Laboratory on laboratoryusage.LaboratoryId = Laboratory.LaboratoryId
+        WHERE UserId = #{userId}
+        ORDER BY UsageEndTime ASC
+        LIMIT #{currentPage}, #{pageSize}
+    </select>
+    <!-- 根据特殊条件查询教师的实验室预约记录 -->
+    <!-- 支持任意组合查询：实验室名称、预约状态、使用状态 -->
+    <select id="getTeacherReservedLaboratoryListBySpecialCondition" resultType="java.util.HashMap">
+        SELECT
+        laboratoryusage.*,
+        Laboratory.LaboratoryName
+        FROM laboratoryusage
+        LEFT JOIN Laboratory ON laboratoryusage.LaboratoryId = Laboratory.LaboratoryId
+        WHERE laboratoryusage.userId = #{userId}
+
+        <!-- 实验室名称（可选筛选条件，模糊匹配） -->
+        <!-- 只有当 laboratoryName 不为空时才添加此条件 -->
+        <if test="laboratoryName != null and laboratoryName != ''">
+            AND Laboratory.LaboratoryName LIKE CONCAT('%', #{laboratoryName}, '%')
+        </if>
+
+        <!-- 预约状态（可选筛选条件，精确匹配） -->
+        <!-- 状态值：1-待审批，2-已取消，3-已拒绝，4-已通过 -->
+        <!-- 只有当 reservationStatus 不为 null 时才添加此条件 -->
+        <if test="reservationStatus != null">
+            AND laboratoryusage.ReservationStatus = #{reservationStatus}
+        </if>
+
+        <!-- 使用状态（可选筛选条件，精确匹配） -->
+        <!-- 状态值：0-未开始，1-使用中，2-已结束 -->
+        <!-- 只有当 usageStatus 不为 null 时才添加此条件 -->
+        <if test="usageStatus != null">
+            AND laboratoryusage.UsageStatus = #{usageStatus}
+        </if>
+
+        ORDER BY laboratoryusage.UsageEndTime ASC
+        LIMIT #{currentPage}, #{pageSize}
+    </select>
+    <select id="getTeacherReservedLaboratoryListBySpecialConditionCount" resultType="java.lang.Integer">
+        SELECT
+        COUNT(1)
+        FROM laboratoryusage
+        LEFT JOIN Laboratory ON laboratoryusage.LaboratoryId = Laboratory.LaboratoryId
+        WHERE laboratoryusage.userId = #{userId}
+
+        <!-- 实验室名称（可选筛选条件，模糊匹配） -->
+        <!-- 只有当 laboratoryName 不为空时才添加此条件 -->
+        <if test="laboratoryName != null and laboratoryName != ''">
+            AND Laboratory.LaboratoryName LIKE CONCAT('%', #{laboratoryName}, '%')
+        </if>
+
+        <!-- 预约状态（可选筛选条件，精确匹配） -->
+        <!-- 状态值：1-待审批，2-已取消，3-已拒绝，4-已通过 -->
+        <!-- 只有当 reservationStatus 不为 null 时才添加此条件 -->
+        <if test="reservationStatus != null">
+            AND laboratoryusage.ReservationStatus = #{reservationStatus}
+        </if>
+
+        <!-- 使用状态（可选筛选条件，精确匹配） -->
+        <!-- 状态值：0-未开始，1-使用中，2-已结束 -->
+        <!-- 只有当 usageStatus 不为 null 时才添加此条件 -->
+        <if test="usageStatus != null">
+            AND laboratoryusage.UsageStatus = #{usageStatus}
+        </if>
+    </select>
+    <select id="getDeviceBorrowRecordByTeacher" resultType="hashmap">
+        SELECT
+        B.*,
+        L.LaboratoryName,
+        E.EquipmentName,
+        T.TypeName
+        FROM borrowrequest B
+        INNER JOIN `user` U ON U.UserId = B.ApplicantId
+        INNER JOIN equipment E ON B.EquipmentId = E.EquipmentId
+        INNER JOIN laboratory L ON E.LaboratoryId = L.LaboratoryId
+        INNER JOIN equipmenttype T ON E.TypeId = T.TypeId
+        WHERE U.UserId = #{userId}
+        LIMIT #{currentPage}, #{pageSize}
+    </select>
+    <select id="getDeviceBorrowRecordByTeacherCount" resultType="java.lang.Integer">
+        select count(1) from borrowrequest B left join user U on U.UserId=B.ApplicantId
+        where U.UserId=#{userId}
+    </select>
+
+    <select id="getTeacherBorrowRecordByConditionCount" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM borrowrequest B
+        INNER JOIN `user` U ON U.UserId = B.ApplicantId
+        INNER JOIN equipment E ON B.EquipmentId = E.EquipmentId
+        INNER JOIN laboratory L ON E.LaboratoryId = L.LaboratoryId
+        INNER JOIN equipmenttype T ON E.TypeId = T.TypeId
+        WHERE U.UserId = #{userId}
+
+        <!-- 设备名称（模糊查询） -->
+        <if test="equipmentName != null and equipmentName != ''">
+            AND E.EquipmentName LIKE CONCAT('%', #{equipmentName}, '%')
+        </if>
+
+        <!-- 审批状态（精确匹配） -->
+        <if test="approvalStatus != null">
+            AND B.ApprovalStatus = #{approvalStatus}
+        </if>
+
+        <!-- 归还状态（精确匹配） -->
+        <if test="returnStatus != null">
+            AND B.ReturnStatus = #{returnStatus}
+        </if>
+    </select>
+    <select id="getTeacherBorrowRecordByCondition" resultType="hashmap">
+        SELECT
+        B.*,
+        L.LaboratoryName AS laboratoryName,        <!-- 所属实验室 -->
+        E.EquipmentName AS equipmentName,          <!-- 设备名称 -->
+        T.TypeName AS typeName                     <!-- 设备类型 -->
+        FROM borrowrequest B
+        INNER JOIN `user` U ON U.UserId = B.ApplicantId
+        INNER JOIN equipment E ON B.EquipmentId = E.EquipmentId
+        INNER JOIN laboratory L ON E.LaboratoryId = L.LaboratoryId
+        INNER JOIN equipmenttype T ON E.TypeId = T.TypeId
+        WHERE U.UserId = #{userId}
+
+        <!-- 设备名称（模糊查询） -->
+        <if test="equipmentName != null and equipmentName != ''">
+            AND E.EquipmentName LIKE CONCAT('%', #{equipmentName}, '%')
+        </if>
+
+        <!-- 审批状态（精确匹配） -->
+        <if test="approvalStatus != null">
+            AND B.ApprovalStatus = #{approvalStatus}
+        </if>
+
+        <!-- 归还状态（精确匹配） -->
+        <if test="returnStatus != null">
+            AND B.ReturnStatus = #{returnStatus}
+        </if>
+        LIMIT #{currentPage}, #{pageSize}
+    </select>
+    <select id="queryDeviceIdByBorrowRecordId" resultType="java.lang.Integer">
+        select EquipmentId from borrowrequest where RequestId = #{requestId}
+    </select>
+    <select id="getMaintenanceRecordByTeacher" resultType="hashmap">
+        SELECT
+        maintenancerecord.*,
+        equipment.EquipmentName,
+        equipmenttype.TypeName
+        FROM
+        maintenancerecord
+        -- 第一个关联：维修记录 → 设备表（通过设备ID关联）
+        LEFT JOIN equipment
+        ON maintenancerecord.EquipmentId = equipment.EquipmentId
+        -- 第二个关联：设备表 → 设备类型表（通过类型ID关联）
+        LEFT JOIN equipmenttype
+        ON equipment.TypeId = equipmenttype.TypeId
+        WHERE
+        maintenancerecord.ReporterId = #{userId} -- 筛选报修人ID=1025的记录
+        limit #{currentPage}, #{pageSize}
+    </select>
+    <select id="getMaintenanceRecordByTeacherCount" resultType="java.lang.Integer">
+        select count(1) from maintenancerecord where ReporterId =#{userId}
+    </select>
+    <select id="getMaintenanceRecordByDeviceNameOrStatus" resultType="java.util.HashMap">
+        SELECT
+        m.*,
+        e.EquipmentName,
+        t.TypeName
+        FROM
+        maintenancerecord m
+        LEFT JOIN
+        equipment e ON e.EquipmentId = m.EquipmentId
+        left join equipmenttype t on e.TypeId = t.TypeId
+        WHERE
+        1 = 1
+        AND m.ReporterId = #{userId}
+        AND (
+        <if test="equipmentName != null and equipmentName != ''">
+            e.EquipmentName LIKE CONCAT('%', #{equipmentName}, '%')
+        </if>
+        <if test="equipmentName == null or equipmentName == ''">
+            1 = 0
+        </if>
+        <if test="status != null">
+            OR m.MaintenanceStatus = #{status}
+        </if>
+        )
+        LIMIT #{currentPage}, #{pageSize}
+    </select>
+    <select id="getMaintenanceRecordByDeviceNameOrStatusCount" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM
+        maintenancerecord m
+        LEFT JOIN
+        equipment e ON e.EquipmentId = m.EquipmentId
+        left join equipmenttype t on e.TypeId = t.TypeId
+        WHERE
+        1 = 1
+        AND m.ReporterId = #{userId}
+        AND (
+        <if test="equipmentName != null and equipmentName != ''">
+            e.EquipmentName LIKE CONCAT('%', #{equipmentName}, '%')
+        </if>
+        <if test="equipmentName == null or equipmentName == ''">
+            1 = 0
+        </if>
+        <if test="status != null">
+            OR m.MaintenanceStatus = #{status}
+        </if>
+        )
+    </select>
+
+</mapper>

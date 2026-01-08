@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.navg.laboratory.mapper.admin.LaboratoryManagementMapper">
+    <insert id="addLaboratory">
+        insert into
+        laboratory(LaboratoryName,Building,RoomNumber,Capacity,
+        ManagerName,ManagerPhone,LaboratoryStatus,
+        Description,CreateTime,UpdateTime)
+        values(
+        #{laboratoryName}, #{building}, #{roomNumber}, #{capacity},
+        #{managerName}, #{managerPhone},
+        #{laboratoryStatus}, #{description}, #{createTime}, #{updateTime})
+    </insert>
+    <update id="updateLaboratory">
+        update laboratory set
+        LaboratoryName=#{laboratoryName},
+        Building=#{building},
+        RoomNumber=#{roomNumber},
+        Capacity=#{capacity},
+        ManagerName=#{managerName},
+        ManagerPhone=#{managerPhone},
+        LaboratoryStatus=#{laboratoryStatus},
+        Description=#{description},
+        UpdateTime=#{updateTime}
+        where LaboratoryId=#{laboratoryId}
+    </update>
+    <delete id="deleteLaboratory">
+        delete from laboratory where LaboratoryId=#{laboratoryId}
+    </delete>
+    <select id="getAllLaboratory" resultType="Laboratory">
+        select * from laboratory limit #{currentPage}, #{pageSize}
+    </select>
+    <select id="queryLaboratoryListByCondition" resultType="cn.navg.laboratory.pojo.Laboratory">
+        SELECT * FROM laboratory
+        <where>
+            <if test="laboratoryName != null and laboratoryName != ''">
+                AND LaboratoryName LIKE CONCAT('%', #{laboratoryName}, '%')
+            </if>
+            <if test="laboratoryStatus != null and laboratoryStatus != ''">
+                AND LaboratoryStatus = #{laboratoryStatus}
+            </if>
+        </where>
+        LIMIT #{currentPage}, #{pageSize}
+    </select>
+
+    <select id="getTotalCount" resultType="java.lang.Integer">
+        select count(*) from laboratory
+    </select>
+    <select id="getTotalCountByCondition" resultType="java.lang.Integer">
+        SELECT count(*) FROM laboratory
+        <where>
+            <if test="laboratoryName != null and laboratoryName != ''">
+                LaboratoryName LIKE CONCAT('%', #{laboratoryName}, '%')
+            </if>
+            <if test="laboratoryStatus != null and laboratoryStatus != ''">
+                <if test="laboratoryName != null and laboratoryName != ''">OR</if>
+                LaboratoryStatus = #{laboratoryStatus}
+            </if>
+        </where>
+    </select>
+    <select id="getEquipmentListByLaboratoryId" resultType="cn.navg.laboratory.pojo.Equipment">
+        select equipment.* from equipment
+        left join laboratory on equipment.LaboratoryId=laboratory.LaboratoryId
+        where
+        laboratory.LaboratoryId=#{laboratoryId}
+    </select>
+    <select id="getEquipmentTotalCountByLaboratoryId" resultType="java.lang.Integer">
+        SELECT COUNT(*) AS equipment_count
+        FROM equipment e
+        INNER JOIN laboratory l
+        ON e.LaboratoryId = l.LaboratoryId
+        WHERE l.LaboratoryId = #{laboratoryId};
+    </select>
+    <select id="getLaboratoryByCondition" resultType="cn.navg.laboratory.pojo.Laboratory">
+        SELECT
+        *
+        FROM
+        laboratory L
+        WHERE
+        L.LaboratoryName = #{laboratoryName}
+        OR L.Building = #{building}
+        OR L.RoomNumber = #{roomNumber}
+    </select>
+    <select id="checkLaboratoryIsExist" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM laboratory
+        WHERE
+        <!-- 如果有 laboratoryId，说明是更新操作，需要排除自身 -->
+        <if test="laboratoryId != null">
+            LaboratoryId != #{laboratoryId} AND
+        </if>
+        (
+        LaboratoryName = #{laboratoryName}
+        OR (Building = #{building} AND RoomNumber = #{roomNumber})
+        )
+    </select>
+</mapper>

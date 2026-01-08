@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.navg.laboratory.mapper.admin.UserManagementMapper">
+    <update id="updateUser" parameterType="cn.navg.laboratory.pojo.User">
+        update user set
+        user.UserAccount =#{UserAccount},
+        user.UserName=#{UserName},
+        user.UserPassword=#{UserPassword},
+        user.UserEmail=#{UserEmail},
+        user.UserPhone=#{UserPhone},
+        `user`.UserStatus=#{UserStatus},
+        `user`.Department=#{Department},
+        `user`.Position=#{Position},
+        `user`.CreateTime=#{CreateTime},
+        `user`.updateTime=#{UpdateTime}
+        where `user`.UserId=#{UserId}
+    </update>
+    <update id="updateUserRole">
+        UPDATE userrole
+        SET
+        RoleId = #{RoleId}
+        WHERE UserId = #{UserId}
+    </update>
+    <delete id="deleteUser">
+        DELETE FROM user WHERE UserId = #{UserId}
+    </delete>
+
+    <!-- 修改queryAllUsers查询 -->
+    <select id="queryAllUsers" resultType="cn.navg.laboratory.pojo.User" parameterType="integer">
+        SELECT
+        u.UserId, u.UserName, u.UserAccount, u.UserEmail,
+        u.UserPhone, u.UserStatus, u.Department, u.Position,
+        u.UpdateTime as updateTime, r.RoleType
+        FROM
+        user u
+        INNER JOIN userrole ur ON u.UserId = ur.UserId
+        INNER JOIN role r ON ur.RoleId = r.RoleId
+        ORDER BY u.UserId ASC
+        LIMIT #{currentPage}, #{pageSize}
+
+    </select>
+    <!--查询所有用户的总条数-->
+    <select id="queryAllUsersCount" resultType="java.lang.Integer">
+        SELECT count(*)
+        FROM user
+        INNER JOIN userrole ON user.UserId = userrole.UserId
+    </select>
+
+
+    <!-- 修改queryUsersByConditions查询 -->
+    <select id="queryUsersByConditions" resultType="cn.navg.laboratory.pojo.User" parameterType="map">
+        SELECT
+        USER.*,
+        role.RoleType,
+        USER.UpdateTime as updateTime
+        FROM USER
+        LEFT JOIN userrole ON userrole.UserId = `user`.UserId
+        LEFT JOIN role ON userrole.RoleId = role.RoleId
+        WHERE
+        `user`.UserStatus LIKE concat('%', #{status}, '%')
+        <if test="roleType != null and roleType != ''">
+            AND role.RoleType = #{roleType}
+        </if>
+        <if test="username != null and username != ''">
+            AND USER.UserName LIKE concat('%', #{username}, '%')
+        </if>
+        LIMIT #{currentPage}, #{PageSize}
+    </select>
+    <select id="queryUsersByConditionsCount" resultType="java.lang.Integer" parameterType="map">
+        SELECT count(*)
+        FROM USER
+        LEFT JOIN userrole ON userrole.UserId = `user`.UserId
+        LEFT JOIN role ON userrole.RoleId = role.RoleId
+        WHERE
+        `user`.UserStatus LIKE concat('%', #{status}, '%')
+        <if test="roleType != null and roleType != ''">
+            AND role.RoleType = #{roleType}
+        </if>
+        <if test="username != null and username != ''">
+            AND USER.UserName LIKE concat('%', #{username}, '%')
+        </if>
+    </select>
+    <select id="queryUserIdByUserAccount" resultType="java.lang.Integer" parameterType="string">
+        SELECT UserId FROM user WHERE UserAccount = #{userAccount}
+    </select>
+    <select id="queryUserExistByUserAccount" resultType="cn.navg.laboratory.pojo.User" parameterType="string">
+        SELECT * FROM user WHERE UserAccount = #{userAccount}
+    </select>
+    <select id="queryUserById" resultType="cn.navg.laboratory.pojo.User">
+        SELECT * FROM user WHERE UserId = #{UserId}
+    </select>
+    <select id="queryRoleTypeById" resultType="java.lang.String">
+        select
+        role.RoleType
+        from
+        user
+        left join
+        userrole on userrole.UserId = `user`.UserId
+        left join
+        role on userrole.RoleId = role.RoleId
+        where
+        user.UserId=#{UserId}
+    </select>
+
+    <insert id="addUser" parameterType="cn.navg.laboratory.pojo.User">
+        insert into user(UserName, UserAccount, UserPassword, UserEmail, UserPhone, UserStatus, Department, Position,
+        CreateTime, UpdateTime)
+        values(#{UserName}, #{UserAccount}, #{UserPassword}, #{UserEmail}, #{UserPhone}, #{UserStatus}, #{Department},
+        #{Position}, #{CreateTime}, #{UpdateTime})
+    </insert>
+    <insert id="addUserRole">
+        insert into userrole(UserId, RoleId, CreateTime) values(#{UserId}, #{RoleId},#{CreateTime})
+    </insert>
+</mapper>

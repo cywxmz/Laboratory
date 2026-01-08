@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.navg.laboratory.mapper.admin.equipmentManagementMapper">
+    <insert id="addEquipment">
+        INSERT INTO equipment (
+            EquipmentName, EquipmentModel, TypeId, Manufacturer, PurchaseDate,
+            PurchasePrice, LaboratoryId, EquipmentStatus, UsageLife, SerialNumber,
+            Quantity, Description, CreateTime, UpdateTime
+        ) VALUES (
+            #{equipmentName}, #{equipmentModel}, #{typeId}, #{manufacturer}, #{purchaseDate},
+            #{purchasePrice}, #{laboratoryId}, #{equipmentStatus}, #{usageLife}, #{serialNumber},
+            #{quantity}, #{description}, #{createTime}, #{updateTime}
+        )
+    </insert>
+    <update id="updateEquipment">
+        UPDATE equipment
+        SET
+        EquipmentName = #{equipmentName},
+        EquipmentModel = #{equipmentModel},
+        TypeId = #{typeId},
+        Manufacturer = #{manufacturer},
+        PurchaseDate = #{purchaseDate},
+        PurchasePrice = #{purchasePrice},
+        LaboratoryId = #{laboratoryId},
+        EquipmentStatus = #{equipmentStatus},
+        UsageLife = #{usageLife},
+        SerialNumber = #{serialNumber},
+        Quantity = #{quantity},
+        Description = #{description},
+        UpdateTime = #{updateTime}
+        WHERE EquipmentId = #{equipmentId}
+    </update>
+    <delete id="deleteEquipment">
+        DELETE FROM equipment WHERE EquipmentId = #{equipmentId}
+    </delete>
+
+    <select id="getALLLaboratoryName" resultType="string">
+        select LaboratoryName from laboratory
+    </select>
+    <select id="getAllEquipmentType" resultType="cn.navg.laboratory.pojo.EquipmentType">
+        select TypeId,TypeName,TypeDescription from equipmenttype
+    </select>
+    <select id="getAllEquipment" resultType="cn.navg.laboratory.pojo.Equipment">
+        select * from equipment limit #{currentPage}, #{pageSize}
+    </select>
+    <select id="getTotalEquipment" resultType="java.lang.Integer">
+        select count(*) from equipment
+    </select>
+    <select id="searchEquipment" resultType="cn.navg.laboratory.pojo.Equipment">
+        SELECT
+        e.*,
+        et.TypeName,
+        l.LaboratoryName
+        FROM
+        equipment e
+        LEFT JOIN equipmenttype et ON e.TypeId = et.TypeId
+        LEFT JOIN laboratory l ON e.LaboratoryId = l.LaboratoryId
+        <where>
+            <if test="equipmentName != null and equipmentName != ''">
+                AND e.EquipmentName LIKE CONCAT('%', #{equipmentName}, '%')
+            </if>
+            <if test="laboratoryName != null and laboratoryName != ''">
+                AND l.LaboratoryName LIKE CONCAT('%', #{laboratoryName}, '%')
+            </if>
+            <if test="equipmentStatus != null and equipmentStatus != ''">
+                AND e.EquipmentStatus = #{equipmentStatus}
+            </if>
+            <if test="typeName != null and typeName != ''">
+                AND et.TypeName LIKE CONCAT('%', #{typeName}, '%')
+            </if>
+        </where>
+        ORDER BY e.EquipmentId asc
+        LIMIT #{currentPage}, #{pageSize}
+    </select>
+    <select id="getTotalConditionsEquipment" resultType="java.lang.Integer">
+        SELECT
+        count(e.EquipmentId)
+        FROM
+        equipment e
+        LEFT JOIN equipmenttype et ON e.TypeId = et.TypeId
+        LEFT JOIN laboratory l ON e.LaboratoryId = l.LaboratoryId
+        <where>
+            <if test="equipmentName != null and equipmentName != ''">
+                AND e.EquipmentName LIKE CONCAT('%', #{equipmentName}, '%')
+            </if>
+            <if test="laboratoryName != null and laboratoryName != ''">
+                AND l.LaboratoryName LIKE CONCAT('%', #{laboratoryName}, '%')
+            </if>
+            <if test="equipmentStatus != null and equipmentStatus != ''">
+                AND e.EquipmentStatus = #{equipmentStatus}
+            </if>
+            <if test="typeName != null and typeName != ''">
+                AND et.TypeName LIKE CONCAT('%', #{typeName}, '%')
+            </if>
+        </where>
+    </select>
+    <select id="getEquipmentTypeIdByName" resultType="java.lang.Integer">
+        select TypeId from equipmenttype where TypeName = #{typeName}
+    </select>
+    <select id="getLaboratoryIdByName" resultType="java.lang.Integer">
+        select LaboratoryId from laboratory where LaboratoryName = #{laboratoryName}
+    </select>
+</mapper>

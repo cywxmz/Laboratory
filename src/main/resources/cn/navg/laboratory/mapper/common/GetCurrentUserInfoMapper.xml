@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.navg.laboratory.mapper.common.GetCurrentUserInfoMapper">
+
+    <select id="getCurrentUserInfo" resultType="cn.navg.laboratory.pojo.User">
+        SELECT
+        `user`.UserId,
+        `user`.UserName,
+        USER.UserAccount,
+        `user`.UserEmail,
+        UserPhone,
+        `user`.UserStatus,
+        `user`.Department,
+        `user`.Position,
+        `user`.CreateTime,
+        role.RoleType
+        FROM
+        `user`
+        LEFT JOIN userrole ON userrole.UserId = `user`.UserId
+        LEFT JOIN role ON userrole.RoleId = role.RoleId
+        WHERE
+        `user`.UserId = #{userId}
+    </select>
+
+</mapper>

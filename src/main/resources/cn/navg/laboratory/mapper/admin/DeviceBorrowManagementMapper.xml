@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.navg.laboratory.mapper.admin.DeviceBorrowManagementMapper">
+    <update id="approveBorrow" parameterType="cn.navg.laboratory.pojo.BorrowRequest">
+        update borrowrequest
+        set ApprovalStatus = #{approvalStatus},
+        ApproverId = #{approverId},
+        ApproverName = #{approverName},
+        ApprovalTime = #{approvalTime},
+        ApprovalComment = #{approvalComment},
+        UpdateTime = #{updateTime},
+        ActualReturnTime = #{actualReturnTime},
+        ReturnStatus = #{returnStatus}
+        where RequestId = #{requestId}
+    </update>
+    <update id="updateDeviceCountMinusOne" parameterType="java.lang.Integer">
+        update equipment
+        set Quantity = Quantity - 1
+        where EquipmentId = #{equipmentId}
+    </update>
+    <select id="getDeviceBorrowRecordList" resultType="java.util.HashMap">
+        select
+        borrowrequest.*, equipment.EquipmentName as equipmentName, laboratory.LaboratoryName as laboratoryName
+        from borrowrequest
+        left join equipment on borrowrequest.equipmentId = equipment.EquipmentId
+        left join laboratory on equipment.LaboratoryId = laboratory.LaboratoryId
+        limit #{currentPage}, #{pageSize}
+    </select>
+    <select id="getTotalDeviceBorrowRecord" resultType="java.lang.Integer">
+        select count(*) from borrowrequest
+    </select>
+    <select id="getDeviceBorrowRecordByCondition" resultType="java.util.HashMap" parameterType="hashmap">
+        SELECT
+        br.RequestId,
+        br.EquipmentId,
+        br.ApplicantId,
+        br.ApplicantName,
+        br.ApplyDate,
+        br.BorrowStartTime,
+        br.BorrowEndTime,
+        br.BorrowReason,
+        br.ApprovalStatus,
+        br.ApproverId,
+        br.ApproverName,
+        br.ApprovalTime,
+        br.ApprovalComment,
+        br.ActualReturnTime,
+        br.ReturnStatus,
+        br.CreateTime,
+        br.UpdateTime,
+        e.EquipmentName AS equipmentName,
+        l.LaboratoryName AS laboratoryName
+        FROM borrowrequest br
+        LEFT JOIN Equipment e ON br.EquipmentId = e.EquipmentId
+        LEFT JOIN Laboratory l ON e.LaboratoryId = l.LaboratoryId
+        <where>
+            <!-- 申请人姓名模糊查询 -->
+            <if test="applicantName != null and applicantName != ''">
+                AND br.ApplicantName LIKE CONCAT('%', #{applicantName}, '%')
+            </if>
+
+            <!-- 设备名称模糊查询 -->
+            <if test="deviceName != null and deviceName != ''">
+                AND e.EquipmentName LIKE CONCAT('%', #{deviceName}, '%')
+            </if>
+
+            <!-- 实验室名称模糊查询 -->
+            <if test="laboratoryName != null and laboratoryName != ''">
+                AND l.LaboratoryName LIKE CONCAT('%', #{laboratoryName}, '%')
+            </if>
+
+            <!-- 审批状态精确查询 -->
+            <if test="approvalStatus != null">
+                AND br.ApprovalStatus = #{approvalStatus}
+            </if>
+        </where>
+        ORDER BY br.CreateTime DESC
+        LIMIT #{currentPage}, #{pageSize}
+    </select>
+    <select id="getTotalDeviceBorrowRecordByCondition" resultType="java.lang.Integer" parameterType="hashmap">
+        SELECT COUNT(*)
+        FROM borrowrequest br
+        LEFT JOIN Equipment e ON br.EquipmentId = e.EquipmentId
+        LEFT JOIN Laboratory l ON e.LaboratoryId = l.LaboratoryId
+        <where>
+            <!-- 申请人姓名模糊查询 -->
+            <if test="applicantName != null and applicantName != ''">
+                AND br.ApplicantName LIKE CONCAT('%', #{applicantName}, '%')
+            </if>
+
+            <!-- 设备名称模糊查询 -->
+            <if test="deviceName != null and deviceName != ''">
+                AND e.EquipmentName LIKE CONCAT('%', #{deviceName}, '%')
+            </if>
+
+            <!-- 实验室名称模糊查询 -->
+            <if test="laboratoryName != null and laboratoryName != ''">
+                AND l.LaboratoryName LIKE CONCAT('%', #{laboratoryName}, '%')
+            </if>
+
+            <!-- 审批状态精确查询 -->
+            <if test="approvalStatus != null">
+                AND br.ApprovalStatus = #{approvalStatus}
+            </if>
+        </where>
+    </select>
+    <select id="getEquipmentCount" resultType="java.lang.String">
+        select Quantity from equipment where EquipmentId = #{equipmentId}
+    </select>
+</mapper>

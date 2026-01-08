@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.navg.laboratory.mapper.teacher.HomeInfoMapper">
+
+    <!-- 查询用户在本周（周一到周日）的借用申请数量 -->
+    <select id="getHomeInfo" resultType="HashMap">
+        WITH RECURSIVE week_days AS (
+        SELECT 1 as day_num, '周一' as day_name
+        UNION ALL SELECT 2, '周二'
+        UNION ALL SELECT 3, '周三'
+        UNION ALL SELECT 4, '周四'
+        UNION ALL SELECT 5, '周五'
+        UNION ALL SELECT 6, '周六'
+        UNION ALL SELECT 7, '周日'
+        ),
+        target_week AS (
+        SELECT
+        -- 计算指定日期所在周的周一
+        DATE_ADD(#{nowtime}, INTERVAL -WEEKDAY(#{nowtime}) DAY) AS week_start,
+        -- 计算该周的周日
+        DATE_ADD(DATE_ADD(#{nowtime}, INTERVAL -WEEKDAY(#{nowtime}) DAY), INTERVAL 6 DAY) AS week_end
+        ),
+        user_applications AS (
+        SELECT
+        CASE DAYOFWEEK(DATE(br.ApplyDate))
+        WHEN 2 THEN '周一'
+        WHEN 3 THEN '周二'
+        WHEN 4 THEN '周三'
+        WHEN 5 THEN '周四'
+        WHEN 6 THEN '周五'
+        WHEN 7 THEN '周六'
+        WHEN 1 THEN '周日'
+        END as day_name,
+        COUNT(*) as apply_count
+        FROM borrowrequest br, target_week tw
+        WHERE br.ApplicantId = #{userId}  -- 用户ID作为参数
+        AND DATE(br.ApplyDate) &gt;= tw.week_start
+        AND DATE(br.ApplyDate) &lt;= tw.week_end
+        GROUP BY DAYOFWEEK(DATE(br.ApplyDate))
+        )
+        SELECT
+        wd.day_name as day,
+        COALESCE(ua.apply_count, 0) as 'count'
+        FROM week_days wd
+        LEFT JOIN user_applications ua ON wd.day_name = ua.day_name
+        ORDER BY wd.day_num
+    </select>
+</mapper>

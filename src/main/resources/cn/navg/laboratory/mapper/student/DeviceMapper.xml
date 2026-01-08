@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.navg.laboratory.mapper.student.DeviceMapper">
+
+    <select id="queryDevice" resultType="cn.navg.laboratory.pojo.Equipment">
+        SELECT
+        e.*,
+        et.TypeName,
+        l.LaboratoryName
+        FROM
+        equipment e
+        LEFT JOIN equipmenttype et ON e.TypeId = et.TypeId
+        LEFT JOIN laboratory l ON e.LaboratoryId = l.LaboratoryId
+        <where>
+            <if test="equipmentName != null and equipmentName != ''">
+                AND e.EquipmentName LIKE CONCAT('%', #{equipmentName}, '%')
+            </if>
+            <if test="laboratoryName != null and laboratoryName != ''">
+                AND l.LaboratoryName LIKE CONCAT('%', #{laboratoryName}, '%')
+            </if>
+            <if test="typeName != null and typeName != ''">
+                AND et.TypeName LIKE CONCAT('%', #{typeName}, '%')
+            </if>
+        </where>
+        ORDER BY e.EquipmentId asc
+        LIMIT #{currentPage}, #{pageSize}
+    </select>
+    <select id="getTotalDevice" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM
+        equipment e
+        LEFT JOIN equipmenttype et ON e.TypeId = et.TypeId
+        LEFT JOIN laboratory l ON e.LaboratoryId = l.LaboratoryId
+        <where>
+            <if test="equipmentName != null and equipmentName != ''">
+                AND e.EquipmentName LIKE CONCAT('%', #{equipmentName}, '%')
+            </if>
+            <if test="laboratoryName != null and laboratoryName != ''">
+                AND l.LaboratoryName LIKE CONCAT('%', #{laboratoryName}, '%')
+            </if>
+            <if test="typeName != null and typeName != ''">
+                AND et.TypeName LIKE CONCAT('%', #{typeName}, '%')
+            </if>
+        </where>
+    </select>
+</mapper>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.navg.laboratory.mapper.admin.DeviceScrapApprovalMapper">
+    <!-- 审批设备报废请求 -->
+    <update id="approveScrap" parameterType="cn.navg.laboratory.pojo.ScrapApplication">
+        update scraprequest
+        set ScrapStatus = #{scrapStatus},
+        ScrapDate = #{scrapDate},
+        ApprovalTime = #{approvalTime},
+        UpdateTime = #{updateTime},
+        ApprovalComment = #{approvalComment},
+        ApproverId = #{approverId},
+        ApproverName = #{approverName}
+        where ScrapId = #{scrapId}
+    </update>
+    <update id="decreaseDeviceCount">
+        update equipment
+        set Quantity = Quantity - 1
+        where EquipmentId = #{equipmentId}
+    </update>
+    <select id="getAllScrapApplications" resultType="cn.navg.laboratory.pojo.ScrapApplication">
+        select * from scraprequest
+        order by ScrapId asc
+        limit #{currentPage}, #{pageSize}
+    </select>
+    <select id="getTotalScrapApplications" resultType="java.lang.Integer">
+        select count(*) from scraprequest
+    </select>
+
+    <!-- 根据申请人姓名和报废状态查询设备报废审批记录 -->
+    <select id="getScrapApplicationsByCondition" resultType="cn.navg.laboratory.pojo.ScrapApplication"
+            parameterType="map">
+        select * from scraprequest
+        <where>
+            <choose>
+                <!-- 两个条件都有值 -->
+                <when test="applicantName != null and applicantName != '' and scrapStatus != null and scrapStatus != ''">
+                    ApplicantName like concat('%', #{applicantName}, '%')
+                    and ScrapStatus = #{scrapStatus}
+                </when>
+                <!-- 只有申请人姓名 -->
+                <when test="applicantName != null and applicantName != ''">
+                    ApplicantName like concat('%', #{applicantName}, '%')
+                </when>
+                <!-- 只有报废状态 -->
+                <when test="scrapStatus != null and scrapStatus != ''">
+                    ScrapStatus = #{scrapStatus}
+                </when>
+                <!-- 两个条件都为空，不添加任何条件 -->
+            </choose>
+        </where>
+        order by ScrapId asc
+        limit #{currentPage}, #{pageSize}
+    </select>
+    <!--    根据申请人姓名或者报废状态 查询 设备报废审批记录 总数    -->
+    <select id="getTotalScrapApplicationsByCondition" resultType="java.lang.Integer">
+        select count(*) from scraprequest
+        <where>
+            <choose>
+                <!-- 两个条件都有值 -->
+                <when test="applicantName != null and applicantName != '' and scrapStatus != null and scrapStatus != ''">
+                    ApplicantName like concat('%', #{applicantName}, '%')
+                    and ScrapStatus = #{scrapStatus}
+                </when>
+                <!-- 只有申请人姓名 -->
+                <when test="applicantName != null and applicantName != ''">
+                    ApplicantName like concat('%', #{applicantName}, '%')
+                </when>
+                <!-- 只有报废状态 -->
+                <when test="scrapStatus != null and scrapStatus != ''">
+                    ScrapStatus = #{scrapStatus}
+                </when>
+                <!-- 两个条件都为空，不添加任何条件 -->
+            </choose>
+        </where>
+        order by ScrapId asc
+    </select>
+</mapper>

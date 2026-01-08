@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.navg.laboratory.mapper.admin.LaboratoryReservationManagementMapper">
+    <update id="approveReservation" parameterType="laboratoryUsage">
+        update laboratoryusage
+        set ReservationStatus = #{ReservationStatus},
+        Remark = #{Remark},
+        UsageStartTime = #{UsageStartTime},
+        UsageStatus = #{UsageStatus},
+        UpdateTime = #{UpdateTime}
+        where UsageId = #{UsageId}
+    </update>
+    <delete id="cancelReservation" parameterType="laboratoryUsage">
+        update laboratoryusage
+        set ReservationStatus = #{ReservationStatus},
+        Remark = concat(Remark, #{Remark}),
+        UsageStatus = #{UsageStatus},
+        UpdateTime = #{UpdateTime}
+        where UsageId = #{UsageId}
+    </delete>
+
+    <select id="getAllLaboratoryReservationList" resultType="hashmap">
+        SELECT
+        lu.*,
+        l.LaboratoryName
+        FROM
+        laboratoryusage lu
+        LEFT JOIN laboratory l
+        ON lu.LaboratoryId = l.LaboratoryId
+        limit #{currentPage}, #{pageSize}
+    </select>
+
+    <select id="getAllLaboratoryReservationListCount" resultType="int">
+        select count(*) from laboratoryusage
+    </select>
+     <select id="getLaboratoryReservationListByStatusOrName"
+            resultType="hashmap" parameterType="map">
+
+        SELECT
+        u.*,
+        l.LaboratoryName
+        FROM
+        laboratoryusage u
+        LEFT JOIN
+        Laboratory l ON u.LaboratoryId = l.LaboratoryId
+        <where>
+            <!-- 1. 实验室ID查询 -->
+            <if test="query.laboratoryId != null">
+                AND u.LaboratoryId = #{query.laboratoryId}
+            </if>
+
+            <!-- 2. 使用人姓名查询（模糊匹配） -->
+            <if test="query.userName != null and query.userName != ''">
+                AND u.UserName LIKE CONCAT('%', #{query.userName}, '%')
+            </if>
+
+            <!-- 3. 使用人ID查询 -->
+            <if test="query.userId != null">
+                AND u.UserId = #{query.userId}
+            </if>
+
+            <!-- 4. 实验室名称查询（模糊匹配） -->
+            <if test="query.laboratoryName != null and query.laboratoryName != ''">
+                AND l.LaboratoryName LIKE CONCAT('%', #{query.laboratoryName}, '%')
+            </if>
+
+            <!-- 5. 预约状态查询 -->
+            <if test="query.reservationStatus != null">
+                AND u.ReservationStatus = #{query.reservationStatus}
+            </if>
+
+            <!-- 6. 时间段重叠查询（检测预约冲突） -->
+            <!-- 注意：这里的时间段条件逻辑需要修正 -->
+            <if test="query.usageStartTime != null and query.usageEndTime != null">
+                AND u.UsageStartTime &lt; #{query.usageEndTime}
+                AND u.UsageEndTime &gt; #{query.usageStartTime}
+            </if>
+
+            <!-- 9. 使用状态查询 -->
+            <if test="query.usageStatus != null">
+                AND u.UsageStatus = #{query.usageStatus}
+            </if>
+        </where>
+        ORDER BY
+        u.UsageStartTime DESC
+        limit #{query.currentPage}, #{query.pageSize}
+    </select>
+    <select id="getLaboratoryReservationListByStatusOrNameCount" resultType="java.lang.Integer">
+        SELECT
+        count(*)
+        FROM
+        laboratoryusage u
+        LEFT JOIN
+        Laboratory l ON u.LaboratoryId = l.LaboratoryId
+        <where>
+            <!-- 1. 实验室ID查询 -->
+            <if test="query.laboratoryId != null">
+                AND u.LaboratoryId = #{query.laboratoryId}
+            </if>
+
+            <!-- 2. 使用人姓名查询（模糊匹配） -->
+            <if test="query.userName != null and query.userName != ''">
+                AND u.UserName LIKE CONCAT('%', #{query.userName}, '%')
+            </if>
+
+            <!-- 3. 使用人ID查询 -->
+            <if test="query.userId != null">
+                AND u.UserId = #{query.userId}
+            </if>
+
+            <!-- 4. 实验室名称查询（模糊匹配） -->
+            <if test="query.laboratoryName != null and query.laboratoryName != ''">
+                AND l.LaboratoryName LIKE CONCAT('%', #{query.laboratoryName}, '%')
+            </if>
+
+            <!-- 5. 预约状态查询 -->
+            <if test="query.reservationStatus != null">
+                AND u.ReservationStatus = #{query.reservationStatus}
+            </if>
+
+            <!-- 6. 时间段重叠查询（检测预约冲突） -->
+            <!-- 注意：这里的时间段条件逻辑需要修正 -->
+            <if test="query.usageStartTime != null and query.usageEndTime != null">
+                AND u.UsageStartTime &lt; #{query.usageEndTime}
+                AND u.UsageEndTime &gt; #{query.usageStartTime}
+            </if>
+
+            <!-- 9. 使用状态查询 -->
+            <if test="query.usageStatus != null">
+                AND u.UsageStatus = #{query.usageStatus}
+            </if>
+        </where>
+        ORDER BY
+        u.UsageStartTime DESC
+    </select>
+</mapper>
